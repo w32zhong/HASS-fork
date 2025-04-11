@@ -77,10 +77,9 @@ import numpy as np
 from transformers import get_linear_schedule_with_warmup, AutoConfig
 
 if accelerator.is_main_process:
-    import wandb
-
-    #wandb.login(key="")
-    wandb.init(project="HASS", entity="", config=train_config)
+    #import wandb
+    #wandb.init(project="HASS", entity="", config=train_config)
+    pass
 
 baseconfig = AutoConfig.from_pretrained(args.basepath)
 
@@ -440,7 +439,7 @@ for epoch in range(num_epochs + 1):
                        "train/ploss": ploss.item(), "train/topkloss": topk_loss.item(), "train/loss": loss.item(), "train/acc": cc / ct}
             for id, i in enumerate(top_3acc):
                 logdict[f'train/top_{id + 1}_acc'] = topkacc[id].item() / ct
-            wandb.log(logdict)
+            #wandb.log(logdict)
             # for id,i in enumerate(top_3acc):
             #     wandb.log({f'train/top_{id+1}_acc':topkacc[id].item()/ct})
 

@@ -230,6 +230,8 @@ def get_model_answers(
                 torch.cuda.synchronize()
                 total_time = time.time() - start_time
                 output_ids = output_ids[0][len(input_ids[0]):]
+                print(output_ids.shape[-1] / total_time)
+                quit()
 
                 if conv.stop_token_ids:
                     stop_token_ids_index = [

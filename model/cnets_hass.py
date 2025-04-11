@@ -328,6 +328,9 @@ class LlamaAttention(nn.Module):
             align_big_mask[forward_num - idx - 1:, :q_len - forward_num + idx + 1] = align_small_mask
             align_big_mask = align_big_mask.view(1, 1, 1, q_len, q_len).to(attn_weights.device)
 
+            #print(idx, align_big_mask)
+            #breakpoint()
+
             if align_masks is None:
                 align_masks = align_big_mask
             else:
