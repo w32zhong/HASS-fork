@@ -402,9 +402,12 @@ for epoch in range(num_epochs + 1):
                 predict = model(hidden_states, input_ids, attention_mask, q_hidden_states=q_hidden_states)
 
                 if q_hidden_states is None:
+                    # use predicted states except <BOS>
                     q_hidden_states = torch.cat([hidden_states[:, :1, :], predict[:, :-1, :]], dim=1)[None, :, :, :]
                 else:
+                    # use predicted states except <BOS>
                     new_q_hidden_states = torch.cat([q_hidden_states[-1][:, :1, :], predict[:, :-1, :]], dim=1)[None, :, :, :]
+                    # append new q_states to batch dim
                     q_hidden_states = torch.cat([q_hidden_states, new_q_hidden_states], dim=0)
                 q_hidden_states = q_hidden_states.detach()
 
@@ -414,6 +417,7 @@ for epoch in range(num_epochs + 1):
                 total_loss = train_config["v_w"] * vloss + train_config["p_w"] * ploss + train_config["topk_w"] * topk_loss
                 loss += total_loss
                 accelerator.backward(total_loss)
+            quit()
 
             accelerator.clip_grad_value_(model.parameters(), train_config["grad_clip"])
             optimizer.step()

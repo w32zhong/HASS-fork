@@ -279,6 +279,10 @@ class LlamaAttention(nn.Module):
         else:
 
             forward_num = 1 if q_hidden_states is None else q_hidden_states.shape[0] + 1
+            print(forward_num, hidden_states[0].sum(-1))
+            if q_hidden_states is not None:
+                for i in range(q_hidden_states.shape[0]):
+                    print(f'\t q[{i}]', q_hidden_states[i].sum(-1))
             query_states = self.q_proj(hidden_states) if forward_num == 1 else self.q_proj(q_hidden_states[-1])
             if forward_num > 1:
                 all_hidden_states = torch.cat([hidden_states[None, :, :, :], q_hidden_states], dim=0)   # (forward_num+1, bsz, seq_len, hid_dim)
@@ -328,8 +332,7 @@ class LlamaAttention(nn.Module):
             align_big_mask[forward_num - idx - 1:, :q_len - forward_num + idx + 1] = align_small_mask
             align_big_mask = align_big_mask.view(1, 1, 1, q_len, q_len).to(attn_weights.device)
 
-            #print(idx, align_big_mask)
-            #breakpoint()
+            print(f'appending mask#{idx}', align_big_mask)
 
             if align_masks is None:
                 align_masks = align_big_mask
@@ -640,6 +643,8 @@ class Model(nn.Module):
         inputs_embeds = inputs_embeds.to(hidden_states.dtype)
         hidden_states = self.fc(torch.cat((inputs_embeds, hidden_states), dim=-1))
         if q_hidden_states is not None:
+            # expand inputs_embeds to align q_hidden_states batch dim
+            # and then feed to EAGLE fc_layer
             q_hidden_states = self.fc(torch.cat((inputs_embeds[None, :, :, :].expand(q_hidden_states.shape[0], -1, -1, -1), q_hidden_states), dim=-1))
         all_hidden_states = () if output_hidden_states else None
         next_decoder_cache = () if use_cache else None
@@ -650,7 +655,7 @@ class Model(nn.Module):
 
             past_key_value = past_key_values[idx] if past_key_values is not None else None
 
-            if self.gradient_checkpointing and self.training:
+            if False and self.gradient_checkpointing and self.training:
 
                 def create_custom_forward(module):
                     def custom_forward(*inputs):
