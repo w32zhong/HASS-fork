@@ -287,6 +287,8 @@ class LlamaAttention(nn.Module):
             key_states = self.k_proj(all_hidden_states)
             value_states = self.v_proj(all_hidden_states)
 
+        print(f'query_states: {query_states.shape}, key/value_states: {key_states.shape}')
+
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         key_states = key_states.view(forward_num, bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(2, 3)
         value_states = value_states.view(forward_num, bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(2, 3)
@@ -308,6 +310,7 @@ class LlamaAttention(nn.Module):
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
+        #print(f' query @ key.T(3,4) = {query_states.shape} @ {key_states.transpose(3, 4).shape}')
         attn_weights = torch.matmul(query_states[None, ...], key_states.transpose(3, 4)) / math.sqrt(self.head_dim)
 
         if attn_weights.size() != (forward_num, bsz, self.num_heads, q_len, kv_seq_len):
@@ -334,6 +337,10 @@ class LlamaAttention(nn.Module):
                 align_masks = torch.cat([align_masks, align_big_mask], dim=0)   # (forward_num, 1, 1, seq_len, seq_len)
 
         total_attn_weights = (attn_weights * align_masks).sum(dim=0) # (bsz, head_num, seq_len, seq_len)
+
+        for i in range(align_masks.shape[0]):
+            print(f' align_masks[{i}]:\n{align_masks[i, 0, 0, :5, :5]}')
+
         # upcast attention to fp32
         total_attn_weights = nn.functional.softmax(total_attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
 

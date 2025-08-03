@@ -78,9 +78,7 @@ from transformers import get_linear_schedule_with_warmup, AutoConfig
 
 if accelerator.is_main_process:
     import wandb
-
-    #wandb.login(key="")
-    wandb.init(project="HASS", entity="", config=train_config)
+    #wandb.init(project="HASS", entity="", config=train_config)
 
 baseconfig = AutoConfig.from_pretrained(args.basepath)
 
@@ -400,7 +398,9 @@ for epoch in range(num_epochs + 1):
 
             q_hidden_states = None
             for forward_idx in range(args.forward_num_total):
+                print(f"forward_idx: {forward_idx}")
                 predict = model(hidden_states, input_ids, attention_mask, q_hidden_states=q_hidden_states)
+                #print(f"predict.shape = hidden_states.shape: {hidden_states.shape}")
 
                 if q_hidden_states is None:
                     q_hidden_states = torch.cat([hidden_states[:, :1, :], predict[:, :-1, :]], dim=1)[None, :, :, :]
@@ -408,13 +408,13 @@ for epoch in range(num_epochs + 1):
                     new_q_hidden_states = torch.cat([q_hidden_states[-1][:, :1, :], predict[:, :-1, :]], dim=1)[None, :, :, :]
                     q_hidden_states = torch.cat([q_hidden_states, new_q_hidden_states], dim=0)
                 q_hidden_states = q_hidden_states.detach()
+                print('-' * 30)
 
-
-
-                vloss, ploss, topk_loss, out_head = compute_loss(target, target_p, predict, loss_mask)
-                total_loss = train_config["v_w"] * vloss + train_config["p_w"] * ploss + train_config["topk_w"] * topk_loss
-                loss += total_loss
-                accelerator.backward(total_loss)
+                #vloss, ploss, topk_loss, out_head = compute_loss(target, target_p, predict, loss_mask)
+                #total_loss = train_config["v_w"] * vloss + train_config["p_w"] * ploss + train_config["topk_w"] * topk_loss
+                #loss += total_loss
+                #accelerator.backward(total_loss)
+            quit()
 
             accelerator.clip_grad_value_(model.parameters(), train_config["grad_clip"])
             optimizer.step()
@@ -440,7 +440,7 @@ for epoch in range(num_epochs + 1):
                        "train/ploss": ploss.item(), "train/topkloss": topk_loss.item(), "train/loss": loss.item(), "train/acc": cc / ct}
             for id, i in enumerate(top_3acc):
                 logdict[f'train/top_{id + 1}_acc'] = topkacc[id].item() / ct
-            wandb.log(logdict)
+            #wandb.log(logdict)
             # for id,i in enumerate(top_3acc):
             #     wandb.log({f'train/top_{id+1}_acc':topkacc[id].item()/ct})
 
